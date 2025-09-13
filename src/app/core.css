@@ -264,6 +264,16 @@ body {
     background: #d1d5db;
 }
 
+.fret-0::after {
+    width: 8px;
+    background: #374151;
+}
+
+.fret-12::after {
+    width: 3px;
+    background: #9ca3af;
+}
+
 .note-dot {
     width: 36px;
     height: 36px;

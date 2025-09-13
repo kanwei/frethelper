@@ -30,7 +30,7 @@
                       #{})]
     ($ :div {:class "fretboard"}
        ($ :div {:class "fret-numbers"}
-          (for [fret (range 13)]
+          (for [fret (range 17)]
             ($ :div {:key fret :class "fret-number"}
                (when (> fret 0) fret))))
 
@@ -41,8 +41,8 @@
                  (nth fb/standard-tuning string-idx))
               ($ :div {:class (str "string-line string-line-" string-idx)})
               ($ :div {:class "frets"}
-                 (for [fret-idx (range 13)]
-                   ($ :div {:key fret-idx :class "fret"}
+                 (for [fret-idx (range 17)]
+                   ($ :div {:key fret-idx :class (str "fret fret-" fret-idx)}
                       ($ note-button {:note (nth string-notes fret-idx)
                                       :string-idx string-idx
                                       :fret-idx fret-idx

@@ -10,5 +10,5 @@
 (defn generate-fretboard-notes []
   (vec (for [string-idx (range 6)]
          (let [open-note (nth standard-tuning string-idx)]
-           (vec (for [fret (range 13)]
+           (vec (for [fret (range 17)]
                   (get-note-at-fret open-note fret)))))))
