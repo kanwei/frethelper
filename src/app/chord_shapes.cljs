@@ -9,21 +9,23 @@
 ;; - :name - display name of the form
 
 (def chord-shapes
-  {;; Major Chords (Forms I, II, III)
-   "major" {"I" {:frets [nil 1 3 3 2 1] :root 1 :barres [] :name "Form I"}
-            "II" {:frets [nil nil 1 2 3 4] :root 2 :barres [] :name "Form II"}
-            "III" {:frets [1 1 1 nil 3 4] :root 0 :barres [1] :name "Form III"}}
+  {;; Major Chords (Mel Bay Forms I, II, III)
+   ;; Each form is shown at its lowest position; :base names the chord at that position.
+   "major" {"I"   {:frets [1 3 3 2 1 1]   :root 0 :barres [1] :base "F"  :name "Form I (E-shape)"}
+            "II"  {:frets [nil 4 3 1 2 nil] :root 1 :barres [] :base "Db" :name "Form II (C-shape)"}
+            "III" {:frets [4 3 1 1 1 nil]   :root 0 :barres [1] :base "Ab" :name "Form III (G-shape)"}}
 
    ;; Minor Chords (Forms 1m, 2m, 3m)
    "minor" {"1m" {:frets [nil 1 1 1 nil 3] :root 1 :barres [] :name "Form 1m"}
             "2m" {:frets [nil nil 1 2 3 4] :root 2 :barres [] :name "Form 2m"}
             "3m" {:frets [1 1 nil 1 2 3] :root 0 :barres [1] :name "Form 3m"}}
 
-   ;; Dominant 7th Chords (Forms I7, III7, V7, VII7)
-   "dominant7" {"I7" {:frets [nil nil 1 2 3 4] :root 3 :barres [] :name "Form I7"}
-                "III7" {:frets [nil nil nil 1 1 1 2] :root 1 :barres [1] :name "Form III7"}
-                "V7" {:frets [1 2 3 nil 4] :root 0 :barres [] :name "Form V7"}
-                "VII7" {:frets [nil nil nil 1 nil 2 3 4] :root 0 :barres [] :name "Form VII7"}}
+   ;; Dominant 7th Chords (Mel Bay Forms I7, III7, V7, VII7).
+   ;; All forms play low E + D + G + B; A and high E are deadened.
+   "dominant7" {"I7"   {:frets [3 nil 2 3 1 nil] :root 4 :barres []  :base "C"  :name "Form I7"}
+                "III7" {:frets [2 nil 1 1 1 nil] :root 3 :barres [1] :base "Ab" :name "Form III7"}
+                "V7"   {:frets [1 nil 1 2 1 nil] :root 0 :barres [1] :base "F"  :name "Form V7"}
+                "VII7" {:frets [3 nil 1 3 2 nil] :root 2 :barres []  :base "Eb" :name "Form VII7"}}
 
    ;; Minor 7th Chords (Forms Im7, IIIm7, Vm7, VIIm7)
    "minor7" {"Im7" {:frets [nil nil 1 nil 2 3] :root 2 :barres [] :name "Form Im7"}
@@ -149,21 +151,30 @@
   "Get the chord shape data for a specific chord type and form"
   (get-in chord-shapes [chord-type form]))
 
-(defn transpose-chord-shape [chord-shape key-offset]
-  "Transpose a chord shape by the given number of semitones"
+(defn transpose-chord-shape [chord-shape semitones]
+  "Shift every fret and barre in a shape up by the given number of semitones."
   (when chord-shape
-    (update chord-shape :frets
-            (fn [frets]
-              (mapv (fn [fret]
-                      (cond
-                        (nil? fret) nil ; Don't play string
-                        (= fret 0) key-offset ; Open string becomes fret at key offset
-                        :else (+ fret key-offset)))
-                    frets)))))
+    (-> chord-shape
+        (update :frets
+                (fn [frets]
+                  (mapv (fn [fret]
+                          (cond
+                            (nil? fret) nil
+                            (= fret 0) semitones
+                            :else (+ fret semitones)))
+                        frets)))
+        (update :barres (fn [bs] (mapv #(+ % semitones) (or bs [])))))))
 
 (defn get-transposed-chord [key chord-type form]
-  "Get a chord shape transposed to the specified key"
+  "Get a chord shape transposed to the specified key. If the form declares a
+  :base note, the offset is computed relative to that; otherwise the key index
+  is used as the absolute offset (legacy behavior)."
   (when-let [base-shape (get-chord-shape chord-type form)]
-    (let [key-index (.indexOf notes-for-transposition key)]
-      (when (>= key-index 0)
-        (transpose-chord-shape base-shape key-index)))))
+    (let [target-idx (.indexOf notes-for-transposition key)]
+      (when (>= target-idx 0)
+        (let [base-idx (when-let [b (:base base-shape)]
+                         (.indexOf notes-for-transposition b))
+              semitones (if (and base-idx (>= base-idx 0))
+                          (mod (- target-idx base-idx) 12)
+                          target-idx)]
+          (transpose-chord-shape base-shape semitones))))))

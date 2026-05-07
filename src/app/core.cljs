@@ -37,7 +37,7 @@
                       (set (theory/get-chord-notes selected-key selected-chord))
                       #{})]
     ($ :div {:class "fretboard"}
-       ($ :div {:class "fret-numbers"}
+       ($ :div {:class "fret-numbers fret-numbers-top"}
           (for [fret (range fb/num-frets)]
             ($ :div {:key fret :class "fret-number"}
                (when (> fret 0) fret))))
@@ -59,7 +59,12 @@
                                       :show-all show-all
                                       :chord-notes chord-notes
                                       :clicked-notes clicked-notes
-                                      :on-note-click on-note-click}))))))))))
+                                      :on-note-click on-note-click})))))))
+
+       ($ :div {:class "fret-numbers fret-numbers-bottom"}
+          (for [fret (range fb/num-frets)]
+            ($ :div {:key fret :class "fret-number"}
+               (when (> fret 0) fret)))))))
 
 (defn render-chord-name [root quality minor-notation]
   (case quality

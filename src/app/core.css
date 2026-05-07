@@ -451,8 +451,15 @@ body {
 
 .fret-numbers {
     display: flex;
-    margin-bottom: 10px;
     padding-left: 40px;
+}
+
+.fret-numbers-top {
+    margin-bottom: 10px;
+}
+
+.fret-numbers-bottom {
+    margin-top: 10px;
 }
 
 .fret-number {

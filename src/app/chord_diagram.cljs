@@ -7,7 +7,16 @@
     (let [{:keys [frets barres root]} chord-shape
           num-frets 5
           num-strings 6
-          string-names ["E" "A" "D" "G" "B" "E"]]
+          string-names ["E" "A" "D" "G" "B" "E"]
+          ;; Determine the starting fret of the visible window. If everything is
+          ;; within fret 1-5, start at 1; otherwise shift the window to fit.
+          fingered (concat (keep #(when (and % (> % 0)) %) frets) (or barres []))
+          min-fret (if (seq fingered) (apply min fingered) 1)
+          max-fret (if (seq fingered) (apply max fingered) 1)
+          start-fret (cond
+                       (<= max-fret num-frets) 1
+                       :else min-fret)
+          fret->row (fn [f] (inc (- f start-fret)))]
 
       ($ :div {:class "chord-diagram"}
          ;; Chord name and form
@@ -25,9 +34,9 @@
                         :x2 180
                         :y2 (+ 20 (* i 40))
                         :stroke "#333"
-                        :stroke-width (if (= i 0) "3" "1")}))
+                        :stroke-width (if (and (= i 0) (= start-fret 1)) "3" "1")}))
 
-            ;; String lines  
+            ;; String lines
             (for [i (range num-strings)]
               ($ :line {:key (str "string-" i)
                         :x1 (+ 20 (* i 32))
@@ -38,12 +47,14 @@
                         :stroke-width "1"}))
 
             ;; Barré indicators
-            (for [[idx fret] (map-indexed vector barres)]
+            (for [[idx fret] (map-indexed vector barres)
+                  :let [row (fret->row fret)]
+                  :when (<= 1 row num-frets)]
               ($ :line {:key (str "barre-" idx)
                         :x1 20
-                        :y1 (- (+ 20 (* fret 40)) 20)
+                        :y1 (- (+ 20 (* row 40)) 20)
                         :x2 180
-                        :y2 (- (+ 20 (* fret 40)) 20)
+                        :y2 (- (+ 20 (* row 40)) 20)
                         :stroke "#e74c3c"
                         :stroke-width "8"
                         :stroke-linecap "round"
@@ -51,9 +62,11 @@
 
             ;; Finger positions
             (for [[string-idx fret] (map-indexed vector frets)
-                  :when (and fret (> fret 0))]
+                  :when (and fret (> fret 0))
+                  :let [row (fret->row fret)]
+                  :when (<= 1 row num-frets)]
               (let [x (+ 20 (* string-idx 32))
-                    y (- (+ 20 (* fret 40)) 20)
+                    y (- (+ 20 (* row 40)) 20)
                     is-root (= string-idx root)]
                 ($ :g {:key (str "finger-" string-idx)}
                    ($ :circle {:cx x
@@ -84,7 +97,7 @@
                             :font-weight "bold"}
                      "X")
 
-                  (= fret 0)
+                  (and (= fret 0) (= start-fret 1))
                   ($ :circle {:key (str "open-" string-idx)
                               :cx x
                               :cy 5
@@ -93,7 +106,7 @@
                               :stroke "#27ae60"
                               :stroke-width "3"}))))
 
-            ;; Fret numbers
+            ;; Fret numbers (row labels on the left)
             (for [i (range num-frets)]
               ($ :text {:key (str "fret-num-" i)
                         :x 5
@@ -101,7 +114,7 @@
                         :text-anchor "middle"
                         :font-size "12"
                         :fill "#666"}
-                 (str (inc i))))
+                 (str (+ start-fret i))))
 
             ;; String labels
             (for [[idx string-name] (map-indexed vector string-names)]
