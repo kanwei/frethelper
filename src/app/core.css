@@ -333,9 +333,35 @@ body {
     overflow: visible;
 }
 
-.caged-note-label {
-    user-select: none;
+.caged-lines {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    overflow: visible;
+}
+
+.caged-dot-group {
+    position: absolute;
+    inset: 0;
+}
+
+.caged-dot {
+    position: absolute;
+    transform: translate(-50%, -50%);
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    border: 2px solid white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: 700;
+    font-size: 13px;
     font-family: 'Inter', sans-serif;
+    user-select: none;
+    box-sizing: border-box;
 }
 
 .caged-legend {
@@ -644,10 +670,71 @@ body {
     border-color: #8b5cf6;
 }
 
+.tab-navigation-compact {
+    margin-bottom: 16px;
+    margin-top: 8px;
+}
+
+.tab-navigation-compact .tab-button {
+    padding: 6px 16px;
+    font-size: 13px;
+    border-radius: 6px;
+}
+
 /* Shared Controls */
 .shared-controls {
     margin-bottom: 30px;
     text-align: center;
+}
+
+.key-wheel-wrap {
+    display: flex;
+    justify-content: center;
+    margin-top: 8px;
+}
+
+.key-wheel {
+    width: 320px;
+    height: 320px;
+    display: block;
+}
+
+.key-wedge {
+    stroke: white;
+    stroke-width: 1.5;
+    cursor: pointer;
+    transition: filter 0.15s;
+}
+
+.key-wedge:hover {
+    filter: brightness(0.95);
+}
+
+.key-wedge.selected {
+    stroke: #1f2937;
+    stroke-width: 2.5;
+}
+
+.key-wedge-label {
+    pointer-events: none;
+    user-select: none;
+    font-family: 'Inter', sans-serif;
+    fill: #1f2937;
+    font-weight: 600;
+}
+
+.key-wedge-label.major {
+    font-size: 22px;
+}
+
+.key-wedge-label.minor {
+    font-size: 14px;
+    fill: #374151;
+}
+
+.key-wedge-label.selected.major,
+.key-wedge-label.selected.minor {
+    fill: white;
 }
 
 /* Diatonic Chords */

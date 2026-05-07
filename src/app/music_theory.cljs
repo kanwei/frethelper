@@ -2,6 +2,25 @@
 
 (def notes ["C" "Db" "D" "Eb" "E" "F" "Gb" "G" "Ab" "A" "Bb" "B"])
 
+(def circle-of-fourths
+  ["C" "F" "Bb" "Eb" "Ab" "Db" "Gb" "B" "E" "A" "D" "G"])
+
+;; Display name of the relative minor root for each major key.
+;; Uses sharp-side or flat-side spelling that matches conventional key signature.
+(def relative-minor-display
+  {"C"  "A"
+   "F"  "D"
+   "Bb" "G"
+   "Eb" "C"
+   "Ab" "F"
+   "Db" "Bb"
+   "Gb" "Eb"
+   "B"  "G#"
+   "E"  "C#"
+   "A"  "F#"
+   "D"  "B"
+   "G"  "E"})
+
 (def chord-formulas
   {"Major" [0 4 7]
    "Minor" [0 3 7]
@@ -143,41 +162,36 @@
     (when (seq candidates)
       (apply min-key :fret candidates))))
 
-(defn- build-voicing-from-bass [bass-string bass-fret chord-classes]
-  ;; Build a voicing starting at (bass-string, bass-fret) and filling each higher string
-  ;; with the lowest-fret chord tone whose pitch >= the previous string's pitch.
-  (let [bass-pitch (pitch-at bass-string bass-fret)]
-    (loop [s (inc bass-string)
-           prev-pitch bass-pitch
-           acc [{:string bass-string :fret bass-fret}]]
-      (if (> s 5)
-        acc
-        (if-let [{:keys [fret pitch]} (next-chord-tone-fret s chord-classes prev-pitch)]
-          (recur (inc s) pitch (conj acc {:string s :fret fret}))
-          (recur (inc s) prev-pitch acc))))))
+(def chord-connection-window 3)
 
-(defn- voicing-score [voicing]
-  ;; Lower is better: lowest max-fret, then most strings filled, then tightest span.
-  (let [frets (mapv :fret voicing)
-        max-fret (apply max frets)
-        min-fret (apply min frets)]
-    [max-fret (- (count voicing)) (- max-fret min-fret)]))
-
-(defn caged-triad-voicings [chord-root quality]
-  ;; Returns a vector of up to 3 voicings (one per inversion), bass on low E or A,
-  ;; extending up through higher strings (D, G, B, high E) with chord tones.
+(defn chord-tone-positions [chord-root quality]
+  ;; All fretboard positions (fret 0-12, every string, low-E-first index) where a
+  ;; chord tone occurs. Returns a vector of {:string :fret} maps.
   (when-let [intervals (triad-intervals quality)]
     (let [root-idx (note-index chord-root)
-          chord-classes (mapv #(mod (+ root-idx %) 12) intervals)]
-      (->> chord-classes
-           (mapv (fn [bass-class]
-                   (let [vs (for [bs bass-strings
-                                  :let [bf (lowest-fret bs bass-class)]
-                                  :when (<= bf 12)]
-                              (build-voicing-from-bass bs bf chord-classes))]
-                     (when (seq vs)
-                       (first (sort-by voicing-score vs))))))
-           (filterv some?)))))
+          classes (set (mapv #(mod (+ root-idx %) 12) intervals))]
+      (vec (for [string-idx (range 6)
+                 fret (range 13)
+                 :let [note-class (mod (+ (nth open-string-class string-idx) fret) 12)]
+                 :when (contains? classes note-class)]
+             {:string string-idx :fret fret})))))
+
+(defn chord-connections [positions]
+  ;; Pairs of chord-tone positions whose fret distance is within the window, either:
+  ;; - on adjacent strings, or
+  ;; - on the same string (consecutive chord tones).
+  (let [by-string (group-by :string positions)
+        adjacent (for [s (range 5)
+                       p1 (get by-string s [])
+                       p2 (get by-string (inc s) [])
+                       :when (<= (Math/abs (- (:fret p1) (:fret p2))) chord-connection-window)]
+                   [p1 p2])
+        same-string (for [s (range 6)
+                          :let [ps (sort-by :fret (get by-string s []))]
+                          [p1 p2] (partition 2 1 ps)
+                          :when (<= (- (:fret p2) (:fret p1)) chord-connection-window)]
+                      [p1 p2])]
+    (vec (concat adjacent same-string))))
 
 (defn- hex->rgb [hex]
   (let [h (subs hex 1)]

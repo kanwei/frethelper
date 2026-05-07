@@ -7,8 +7,7 @@
 (def default-settings
   {:minor-notation "m"      ; "m" or "-"
    :fretboard-mode "notes"  ; "notes" or "caged"
-   :active-degrees #{"I" "ii" "vi" "V7"} ; jazz default for CAGED overlay
-   :active-inversions #{0 1 2}}) ; CAGED inversions to show: 0=root, 1=1st, 2=2nd
+   :active-degrees #{"I" "ii" "vi" "V7"}}) ; jazz default for CAGED overlay
 
 (defn load-settings []
   (try

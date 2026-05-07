@@ -66,86 +66,72 @@
     "Diminished" ($ :span root "°")
     ($ :span root)))
 
+(defn- to-fb-position [{:keys [string fret]}]
+  (let [fb-idx (- 5 string)
+        open-note (nth fb/standard-tuning fb-idx)]
+    {:string-idx fb-idx
+     :fret fret
+     :note (fb/get-note-at-fret open-note fret)}))
+
 (defn caged-positions [chord-root quality]
-  ;; Returns a vector of voicings, each a vector of {:string-idx :fret :note} maps,
-  ;; in fretboard string convention (0 = high E, 5 = low E).
-  (->> (theory/caged-triad-voicings chord-root quality)
-       (mapv (fn [voicing]
-               (->> voicing
-                    (map (fn [{:keys [string fret]}]
-                           (let [fb-idx (- 5 string)
-                                 open-note (nth fb/standard-tuning fb-idx)]
-                             {:string-idx fb-idx
-                              :fret fret
-                              :note (fb/get-note-at-fret open-note fret)})))
-                    (sort-by :string-idx)
-                    (vec))))))
+  ;; Returns {:positions [...] :connections [[a b] ...]} in fretboard string
+  ;; convention (0 = high E, 5 = low E). Positions are every chord tone on the
+  ;; fretboard; connections are pairs on adjacent strings within 3 frets.
+  (let [tones (theory/chord-tone-positions chord-root quality)
+        edges (theory/chord-connections tones)]
+    {:positions (mapv to-fb-position tones)
+     :connections (mapv (fn [[a b]] [(to-fb-position a) (to-fb-position b)]) edges)}))
 
-(def inversion-offset
-  ;; Tiny y-offset per inversion so overlapping voicings are visually distinct.
-  {0 -0.07
-   1 0
-   2 0.07})
+(defn- pct [n d] (str (* 100 (/ n d)) "%"))
 
-(def inversion-shade
-  ;; Lightness adjustment per inversion (positive = lighter, negative = darker).
-  {0 0.30
-   1 0
-   2 -0.25})
-
-(defui caged-overlay [{:keys [selected-key active-degrees active-inversions]}]
-  (let [chords (theory/get-diatonic-chords selected-key)]
-    ($ :svg {:class "caged-overlay"
-             :view-box (str "0 0 " fb/num-frets " 6")
-             :preserve-aspect-ratio "none"}
-       (for [{:keys [degree root quality]} chords
-             :let [voicings (caged-positions root quality)
-                   base-color (get theory/diatonic-colors degree "#666")]
-             :when (and (seq voicings) (contains? active-degrees degree))]
-         ($ :g {:key degree}
-            (for [[idx voicing] (map-indexed vector voicings)
-                  :when (and (seq voicing) (contains? active-inversions idx))
-                  :let [dy (get inversion-offset idx 0)
-                        color (theory/lighten base-color (get inversion-shade idx 0))]]
-              ($ :g {:key idx}
-                 (when (>= (count voicing) 2)
-                   ($ :polyline {:points (str/join " "
-                                                   (for [{:keys [string-idx fret]} voicing]
-                                                     (str (+ fret 0.5) "," (+ string-idx 0.5 dy))))
-                                 :fill "none"
-                                 :stroke color
-                                 :stroke-width 0.06
-                                 :stroke-linecap "round"
-                                 :stroke-linejoin "round"
-                                 :opacity 0.85}))
-                 (for [{:keys [string-idx fret note]} voicing]
-                   ($ :g {:key (str string-idx "-" fret)}
-                      ($ :circle {:cx (+ fret 0.5)
-                                  :cy (+ string-idx 0.5 dy)
-                                  :r 0.26
-                                  :fill color
-                                  :stroke "white"
-                                  :stroke-width 0.04})
-                      ($ :text {:x (+ fret 0.5)
-                                :y (+ string-idx 0.5 dy)
-                                :text-anchor "middle"
-                                :dominant-baseline "central"
-                                :font-size 0.28
-                                :font-weight "700"
-                                :fill "white"
-                                :class "caged-note-label"}
-                         note))))))))))
-
-(defui inversion-toggles [{:keys [active-inversions on-toggle]}]
-  ($ :div {:class "inversion-toggles"}
-     (for [[idx label] [[0 "Root"] [1 "1st inv"] [2 "2nd inv"]]]
-       (let [active? (contains? active-inversions idx)]
-         ($ :label {:key idx
-                    :class (str "inversion-toggle" (when-not active? " inactive"))}
-            ($ :input {:type "checkbox"
-                       :checked active?
-                       :on-change #(on-toggle idx)})
-            ($ :span label))))))
+(defui caged-overlay [{:keys [selected-key active-degrees]}]
+  (let [chords (theory/get-diatonic-chords selected-key)
+        active-chords (filterv #(contains? active-degrees (:degree %)) chords)
+        chord-data (mapv (fn [{:keys [degree root quality]}]
+                           (let [data (caged-positions root quality)
+                                 color (get theory/diatonic-colors degree "#666")]
+                             (assoc data :degree degree :color color)))
+                         active-chords)]
+    ($ :div {:class "caged-overlay"}
+       ;; SVG layer: just the connection lines (stretches with the fretboard).
+       ($ :svg {:class "caged-lines"
+                :view-box (str "0 0 " fb/num-frets " 6")
+                :preserve-aspect-ratio "none"}
+          (for [{:keys [degree color connections]} chord-data]
+            ($ :g {:key degree}
+               (for [[idx [a b]] (map-indexed vector connections)
+                     :let [same-string? (= (:string-idx a) (:string-idx b))
+                           ;; Same-string connections are exactly horizontal and would
+                           ;; lie along the string line; arc them slightly above the
+                           ;; string with a quadratic curve so they're clearly visible.
+                           x1 (+ (:fret a) 0.5)
+                           y1 (+ (:string-idx a) 0.5)
+                           x2 (+ (:fret b) 0.5)
+                           y2 (+ (:string-idx b) 0.5)
+                           mid-x (/ (+ x1 x2) 2)
+                           ctrl-y (- y1 0.35)]]
+                 (if same-string?
+                   ($ :path {:key idx
+                             :d (str "M " x1 "," y1 " Q " mid-x "," ctrl-y " " x2 "," y2)
+                             :fill "none"
+                             :stroke color
+                             :stroke-width 0.05
+                             :stroke-linecap "round"})
+                   ($ :line {:key idx
+                             :x1 x1 :y1 y1 :x2 x2 :y2 y2
+                             :stroke color
+                             :stroke-width 0.05
+                             :stroke-linecap "round"}))))))
+       ;; HTML layer: dots as absolutely-positioned divs (fixed pixel size).
+       (for [{:keys [degree color positions]} chord-data]
+         ($ :div {:key degree :class "caged-dot-group"}
+            (for [{:keys [string-idx fret note]} positions]
+              ($ :div {:key (str string-idx "-" fret)
+                       :class "caged-dot"
+                       :style {:left (pct (+ fret 0.5) fb/num-frets)
+                               :top (pct (+ string-idx 0.5) 6)
+                               :background-color color}}
+                 note)))))))
 
 (defui caged-legend [{:keys [selected-key minor-notation active-degrees on-toggle]}]
   (let [chords (theory/get-diatonic-chords selected-key)]
@@ -231,7 +217,7 @@
                  ($ :button {:class (str "setting-option"
                                          (when (= "caged" (:fretboard-mode settings)) " selected"))
                              :on-click #(on-update :fretboard-mode "caged")}
-                    "CAGED lines")))))))
+                    "Triads")))))))
 
 (defui legend [{:keys [selected-key]}]
   ($ :div {:class "legend"}
@@ -248,6 +234,64 @@
              ($ :div {:class "legend-dot"
                       :style {:background-color (get theory/interval-colors interval)}})
              ($ :span label))))))
+
+(defn- deg->rad [d] (* d (/ Math/PI 180)))
+
+(defn- polar [cx cy r angle-deg]
+  (let [a (deg->rad angle-deg)]
+    [(+ cx (* r (Math/cos a)))
+     (+ cy (* r (Math/sin a)))]))
+
+(defn- wedge-path [cx cy r-inner r-outer a-start a-end]
+  (let [[x1i y1i] (polar cx cy r-inner a-start)
+        [x2i y2i] (polar cx cy r-inner a-end)
+        [x1o y1o] (polar cx cy r-outer a-start)
+        [x2o y2o] (polar cx cy r-outer a-end)]
+    (str "M " x1i "," y1i
+         " A " r-inner " " r-inner " 0 0 1 " x2i "," y2i
+         " L " x2o "," y2o
+         " A " r-outer " " r-outer " 0 0 0 " x1o "," y1o
+         " Z")))
+
+(defui key-wheel [{:keys [selected-key on-select]}]
+  (let [cx 200 cy 200
+        r-inner 55
+        r-mid 115
+        r-outer 180]
+    ($ :div {:class "key-wheel-wrap"}
+       ($ :svg {:class "key-wheel" :view-box "0 0 400 400"}
+          (for [[idx note] (map-indexed vector theory/circle-of-fourths)
+                :let [a-center (+ -90 (* idx 30))
+                      a-start (- a-center 15)
+                      a-end (+ a-center 15)
+                      hue (* idx 30)
+                      [tx-out ty-out] (polar cx cy (/ (+ r-mid r-outer) 2) a-center)
+                      [tx-in ty-in] (polar cx cy (/ (+ r-inner r-mid) 2) a-center)
+                      selected? (= note selected-key)
+                      minor-root (get theory/relative-minor-display note)]]
+            ($ :g {:key note}
+               ;; Outer (major) wedge
+               ($ :path {:d (wedge-path cx cy r-mid r-outer a-start a-end)
+                         :class (str "key-wedge" (when selected? " selected"))
+                         :style {:fill (str "hsl(" hue " 70% " (if selected? "55%" "82%") ")")}
+                         :on-click #(on-select note)})
+               ;; Inner (relative minor) wedge
+               ($ :path {:d (wedge-path cx cy r-inner r-mid a-start a-end)
+                         :class (str "key-wedge" (when selected? " selected"))
+                         :style {:fill (str "hsl(" hue " 50% " (if selected? "65%" "88%") ")")}
+                         :on-click #(on-select note)})
+               ;; Major label
+               ($ :text {:x tx-out :y ty-out
+                         :text-anchor "middle"
+                         :dominant-baseline "central"
+                         :class (str "key-wedge-label major" (when selected? " selected"))}
+                  note)
+               ;; Relative minor label
+               ($ :text {:x tx-in :y ty-in
+                         :text-anchor "middle"
+                         :dominant-baseline "central"
+                         :class (str "key-wedge-label minor" (when selected? " selected"))}
+                  (str minor-root "m"))))))))
 
 (defui app []
   (let [[selected-key set-selected-key] (uix/use-state "C")
@@ -280,14 +324,7 @@
                                      next-set (if (contains? current degree)
                                                 (disj current degree)
                                                 (conj current degree))]
-                                 (update-setting :active-degrees next-set)))
-
-        handle-toggle-inversion (fn [inv-idx]
-                                  (let [current (or (:active-inversions user-settings) #{})
-                                        next-set (if (contains? current inv-idx)
-                                                   (disj current inv-idx)
-                                                   (conj current inv-idx))]
-                                    (update-setting :active-inversions next-set)))]
+                                 (update-setting :active-degrees next-set)))]
 
     ($ :div {:class "app-container"}
        ($ :div {:class "header"}
@@ -301,28 +338,23 @@
                             :on-update update-setting
                             :on-close #(set-settings-open false)}))
 
-       ;; Tab Navigation
-       ($ :div {:class "tab-navigation"}
-          ($ :button {:class (str "tab-button" (when (= active-tab "fretboard") " active"))
-                      :on-click #(set-active-tab "fretboard")}
-             "🎼 Fretboard Explorer")
-          ($ :button {:class (str "tab-button" (when (= active-tab "chords") " active"))
-                      :on-click #(set-active-tab "chords")}
-             "📖 Chord Diagrams"))
-
        ;; Key selector (shared between both tabs)
        ($ :div {:class "shared-controls"}
           ($ :div {:class "control-group"}
              ($ :label {:class "control-label"} "Select Key:")
-             ($ :div {:class "button-group"}
-                (for [note theory/notes]
-                  ($ :button {:key note
-                              :class (str "key-button"
-                                          (when (= note selected-key) " selected"))
-                              :on-click #(set-selected-key note)}
-                     note))))
+             ($ key-wheel {:selected-key selected-key
+                           :on-select set-selected-key}))
           ($ diatonic-chords-section {:selected-key selected-key
                                       :minor-notation (:minor-notation user-settings)}))
+
+       ;; Compact tab nav (Fretboard view / Chord Diagrams view)
+       ($ :div {:class "tab-navigation tab-navigation-compact"}
+          ($ :button {:class (str "tab-button" (when (= active-tab "fretboard") " active"))
+                      :on-click #(set-active-tab "fretboard")}
+             "Fretboard")
+          ($ :button {:class (str "tab-button" (when (= active-tab "chords") " active"))
+                      :on-click #(set-active-tab "chords")}
+             "Chord Diagrams"))
 
        ;; Conditional content based on active tab
        (case active-tab
@@ -346,19 +378,16 @@
                       (if show-all "Show Chord Notes Only" "Show All Notes"))))
 
               (if caged-mode?
-                ($ :<>
-                   ($ caged-legend {:selected-key selected-key
-                                    :minor-notation (:minor-notation user-settings)
-                                    :active-degrees (or (:active-degrees user-settings) #{})
-                                    :on-toggle handle-toggle-degree})
-                   ($ inversion-toggles {:active-inversions (or (:active-inversions user-settings) #{})
-                                         :on-toggle handle-toggle-inversion}))
+                ($ caged-legend {:selected-key selected-key
+                                 :minor-notation (:minor-notation user-settings)
+                                 :active-degrees (or (:active-degrees user-settings) #{})
+                                 :on-toggle handle-toggle-degree})
                 ($ legend {:selected-key selected-key}))
 
               ($ :div {:class "fretboard-container"}
                  ($ :h2 {:class "fretboard-title"}
                     (if caged-mode?
-                      (str "Key of " selected-key " — CAGED shapes")
+                      (str "Key of " selected-key " — Triads")
                       (str selected-key selected-chord)))
                  ($ :div {:class "fretboard-stack"}
                     ($ fretboard-component {:selected-key (when-not caged-mode? selected-key)
@@ -368,8 +397,7 @@
                                             :on-note-click handle-note-click})
                     (when caged-mode?
                       ($ caged-overlay {:selected-key selected-key
-                                        :active-degrees (or (:active-degrees user-settings) #{})
-                                        :active-inversions (or (:active-inversions user-settings) #{})}))))
+                                        :active-degrees (or (:active-degrees user-settings) #{})}))))
 
               (when-not caged-mode?
                 ($ chord-identifier {:clicked-notes-map clicked-notes
