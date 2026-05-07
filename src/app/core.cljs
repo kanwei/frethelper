@@ -2,6 +2,10 @@
   (:require [uix.core :as uix :refer [defui $]]
             [uix.dom]
             [clojure.string :as str]
+            ["@mantine/core" :refer [MantineProvider Modal Tabs SegmentedControl
+                                     Button Switch Chip Group Stack Title Text
+                                     Paper ActionIcon]]
+            ["@mantine/core" :as mantine]
             [app.music-theory :as theory]
             [app.fretboard :as fb]
             [app.chord-diagram :as chord-diagram]
@@ -135,7 +139,7 @@
 
 (defui caged-legend [{:keys [selected-key minor-notation active-degrees on-toggle]}]
   (let [chords (theory/get-diatonic-chords selected-key)]
-    ($ :div {:class "caged-legend"}
+    ($ Group {:gap "xs" :justify "center" :mb "sm"}
        (for [{:keys [degree root quality]} chords
              :let [active? (contains? active-degrees degree)]]
          ($ :button {:key degree
@@ -189,35 +193,29 @@
                   (render-chord-name root quality minor-notation))
                ($ :div {:class "diatonic-quality"} quality)))))))
 
-(defui settings-modal [{:keys [settings on-update on-close]}]
-  ($ :div {:class "modal-overlay" :on-click on-close}
-     ($ :div {:class "modal" :on-click #(.stopPropagation %)}
-        ($ :div {:class "modal-header"}
-           ($ :h2 {:class "modal-title"} "Settings")
-           ($ :button {:class "modal-close" :on-click on-close} "×"))
-        ($ :div {:class "modal-body"}
-           ($ :div {:class "setting-row"}
-              ($ :label {:class "setting-label"} "Minor chord notation")
-              ($ :div {:class "setting-options"}
-                 ($ :button {:class (str "setting-option"
-                                         (when (= "m" (:minor-notation settings)) " selected"))
-                             :on-click #(on-update :minor-notation "m")}
-                    ($ :span "F") ($ :span "m"))
-                 ($ :button {:class (str "setting-option"
-                                         (when (= "-" (:minor-notation settings)) " selected"))
-                             :on-click #(on-update :minor-notation "-")}
-                    ($ :span "F") ($ :sup {:class "minor-sup"} "-"))))
-           ($ :div {:class "setting-row"}
-              ($ :label {:class "setting-label"} "Fretboard display")
-              ($ :div {:class "setting-options"}
-                 ($ :button {:class (str "setting-option"
-                                         (when (= "notes" (:fretboard-mode settings)) " selected"))
-                             :on-click #(on-update :fretboard-mode "notes")}
-                    "Notes")
-                 ($ :button {:class (str "setting-option"
-                                         (when (= "caged" (:fretboard-mode settings)) " selected"))
-                             :on-click #(on-update :fretboard-mode "caged")}
-                    "Triads")))))))
+(defui settings-modal [{:keys [opened settings on-update on-close]}]
+  ($ Modal {:opened (boolean opened)
+            :onClose on-close
+            :title "Settings"
+            :centered true
+            :size "md"}
+     ($ :div {:style {:padding "8px 0"}}
+        ($ :div {:style {:margin-bottom "16px"}}
+           ($ :div {:style {:font-size "14px" :font-weight 500 :margin-bottom "6px"}}
+              "Minor chord notation")
+           ($ SegmentedControl
+              {:value (:minor-notation settings)
+               :onChange #(on-update :minor-notation %)
+               :data #js [#js {:value "m" :label "Fm"}
+                          #js {:value "-" :label "F⁻"}]}))
+        ($ :div
+           ($ :div {:style {:font-size "14px" :font-weight 500 :margin-bottom "6px"}}
+              "Fretboard display")
+           ($ SegmentedControl
+              {:value (:fretboard-mode settings)
+               :onChange #(on-update :fretboard-mode %)
+               :data #js [#js {:value "notes" :label "Notes"}
+                          #js {:value "caged" :label "Triads"}]})))))
 
 (defui legend [{:keys [selected-key]}]
   ($ :div {:class "legend"}
@@ -328,15 +326,15 @@
 
     ($ :div {:class "app-container"}
        ($ :div {:class "header"}
-          ($ :button {:class "settings-button"
-                      :title "Settings"
-                      :on-click #(set-settings-open true)}
+          ($ ActionIcon {:variant "default" :size "lg" :radius "xl"
+                         :aria-label "Settings"
+                         :onClick #(set-settings-open true)}
              "⚙"))
 
-       (when settings-open?
-         ($ settings-modal {:settings user-settings
-                            :on-update update-setting
-                            :on-close #(set-settings-open false)}))
+       ($ settings-modal {:opened settings-open?
+                          :settings user-settings
+                          :on-update update-setting
+                          :on-close #(set-settings-open false)})
 
        ;; Key selector (shared between both tabs)
        ($ :div {:class "shared-controls"}
@@ -348,13 +346,11 @@
                                       :minor-notation (:minor-notation user-settings)}))
 
        ;; Compact tab nav (Fretboard view / Chord Diagrams view)
-       ($ :div {:class "tab-navigation tab-navigation-compact"}
-          ($ :button {:class (str "tab-button" (when (= active-tab "fretboard") " active"))
-                      :on-click #(set-active-tab "fretboard")}
-             "Fretboard")
-          ($ :button {:class (str "tab-button" (when (= active-tab "chords") " active"))
-                      :on-click #(set-active-tab "chords")}
-             "Chord Diagrams"))
+       ($ Tabs {:value active-tab :onChange set-active-tab :variant "pills"
+                :mb "md" :mt "xs"}
+          ($ (.-List mantine/Tabs) {:justify "center"}
+             ($ (.-Tab mantine/Tabs) {:value "fretboard"} "Fretboard")
+             ($ (.-Tab mantine/Tabs) {:value "chords"} "Chord Diagrams")))
 
        ;; Conditional content based on active tab
        (case active-tab
@@ -362,20 +358,21 @@
          (let [caged-mode? (= "caged" (:fretboard-mode user-settings))]
            ($ :div {:class "fretboard-tab"}
               (when-not caged-mode?
-                ($ :div {:class "controls"}
-                   ($ :div {:class "control-group"}
-                      ($ :label {:class "control-label"} "Select Chord Type:")
-                      ($ :div {:class "button-group"}
+                ($ Stack {:gap "md" :align "center" :mb "md"}
+                   ($ :div
+                      ($ Text {:size "sm" :fw 500 :ta "center" :mb 8} "Select Chord Type:")
+                      ($ Group {:gap "xs" :justify "center"}
                          (for [chord-type (keys theory/chord-formulas)]
-                           ($ :button {:key chord-type
-                                       :class (str "chord-button"
-                                                   (when (= chord-type selected-chord) " selected"))
-                                       :on-click #(set-selected-chord chord-type)}
+                           ($ Button {:key chord-type
+                                      :variant (if (= chord-type selected-chord) "filled" "default")
+                                      :color "teal"
+                                      :size "xs"
+                                      :onClick #(set-selected-chord chord-type)}
                               chord-type))))
-
-                   ($ :button {:class "show-all-button"
-                               :on-click #(set-show-all (not show-all))}
-                      (if show-all "Show Chord Notes Only" "Show All Notes"))))
+                   ($ Switch {:checked show-all
+                              :onChange #(set-show-all (.. % -currentTarget -checked))
+                              :label "Show all notes"
+                              :color "orange"})))
 
               (if caged-mode?
                 ($ caged-legend {:selected-key selected-key
@@ -418,7 +415,9 @@
 
 (defn render []
   (uix.dom/render-root
-   ($ uix/strict-mode
+   ($ MantineProvider
+      {:defaultColorScheme "light"
+       :cssVariablesSelector ":root"}
       ($ app))
    root))
 

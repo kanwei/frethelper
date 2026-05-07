@@ -15,18 +15,15 @@ body {
     -moz-font-feature-settings: "liga" on;
     line-height: 1.4;
     text-rendering: optimizeLegibility;
-    width: 100vw;
     min-height: 100vh;
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    display: flex;
-    justify-content: center;
-    align-items: center;
     padding: 20px;
 }
 
 #root {
     width: 100%;
     max-width: 1400px;
+    margin: 0 auto;
 }
 
 .app-container {
