@@ -78,6 +78,136 @@
     11 "7th"
     ""))
 
+(def diatonic-major-chords
+  [{:degree "I"    :interval 0  :quality "Major"      :suffix ""}
+   {:degree "ii"   :interval 2  :quality "Minor"      :suffix "m"}
+   {:degree "iii"  :interval 4  :quality "Minor"      :suffix "m"}
+   {:degree "IV"   :interval 5  :quality "Major"      :suffix ""}
+   {:degree "V7"   :interval 7  :quality "Dominant 7" :suffix "7"}
+   {:degree "vi"   :interval 9  :quality "Minor"      :suffix "m"}
+   {:degree "vii°" :interval 11 :quality "Diminished" :suffix "°"}])
+
+(defn get-diatonic-chords [root]
+  (let [root-idx (note-index root)]
+    (when (>= root-idx 0)
+      (for [{:keys [degree interval quality suffix]} diatonic-major-chords
+            :let [chord-root (nth notes (mod (+ root-idx interval) 12))]]
+        {:degree degree
+         :root chord-root
+         :quality quality
+         :name (str chord-root suffix)}))))
+
+;; Close-voiced triad search.
+;; String indexing here is low-E-first: 0=low E, 1=A, 2=D, 3=G, 4=B, 5=high E.
+(def open-string-class [4 9 2 7 11 4])
+(def open-string-pitch [0 5 10 15 19 24])
+
+;; Bass strings — chord voicings always start on low E (0) or A (1).
+(def bass-strings [0 1])
+
+(defn- triad-intervals [quality]
+  (case quality
+    "Major"      [0 4 7]   ; R, M3, P5
+    "Minor"      [0 3 7]   ; R, m3, P5
+    "Dominant 7" [0 4 10]  ; R, M3, b7 (3-note shell omitting 5th)
+    "Diminished" [0 3 6]   ; R, m3, b5
+    nil))
+
+(defn- inversions [chord-classes]
+  (let [[a b c] chord-classes]
+    [[a b c] [b c a] [c a b]]))
+
+(defn- lowest-fret [string-idx note-class]
+  (mod (- note-class (nth open-string-class string-idx)) 12))
+
+(defn- pitch-at [string-idx fret]
+  (+ (nth open-string-pitch string-idx) fret))
+
+(defn- ascending-fret [string-idx note-class min-pitch]
+  (loop [f (lowest-fret string-idx note-class)]
+    (if (> (pitch-at string-idx f) min-pitch)
+      f
+      (recur (+ f 12)))))
+
+(defn- next-chord-tone-fret [string-idx chord-classes prev-pitch]
+  ;; Among all chord-class candidates on this string, pick the one with the lowest fret
+  ;; whose pitch is >= prev-pitch. Returns nil if none fit within fret 12.
+  (let [candidates (for [nc chord-classes
+                         :let [base (lowest-fret string-idx nc)
+                               f (loop [f0 base]
+                                   (if (>= (pitch-at string-idx f0) prev-pitch)
+                                     f0
+                                     (recur (+ f0 12))))]
+                         :when (<= f 12)]
+                     {:fret f :pitch (pitch-at string-idx f)})]
+    (when (seq candidates)
+      (apply min-key :fret candidates))))
+
+(defn- build-voicing-from-bass [bass-string bass-fret chord-classes]
+  ;; Build a voicing starting at (bass-string, bass-fret) and filling each higher string
+  ;; with the lowest-fret chord tone whose pitch >= the previous string's pitch.
+  (let [bass-pitch (pitch-at bass-string bass-fret)]
+    (loop [s (inc bass-string)
+           prev-pitch bass-pitch
+           acc [{:string bass-string :fret bass-fret}]]
+      (if (> s 5)
+        acc
+        (if-let [{:keys [fret pitch]} (next-chord-tone-fret s chord-classes prev-pitch)]
+          (recur (inc s) pitch (conj acc {:string s :fret fret}))
+          (recur (inc s) prev-pitch acc))))))
+
+(defn- voicing-score [voicing]
+  ;; Lower is better: lowest max-fret, then most strings filled, then tightest span.
+  (let [frets (mapv :fret voicing)
+        max-fret (apply max frets)
+        min-fret (apply min frets)]
+    [max-fret (- (count voicing)) (- max-fret min-fret)]))
+
+(defn caged-triad-voicings [chord-root quality]
+  ;; Returns a vector of up to 3 voicings (one per inversion), bass on low E or A,
+  ;; extending up through higher strings (D, G, B, high E) with chord tones.
+  (when-let [intervals (triad-intervals quality)]
+    (let [root-idx (note-index chord-root)
+          chord-classes (mapv #(mod (+ root-idx %) 12) intervals)]
+      (->> chord-classes
+           (mapv (fn [bass-class]
+                   (let [vs (for [bs bass-strings
+                                  :let [bf (lowest-fret bs bass-class)]
+                                  :when (<= bf 12)]
+                              (build-voicing-from-bass bs bf chord-classes))]
+                     (when (seq vs)
+                       (first (sort-by voicing-score vs))))))
+           (filterv some?)))))
+
+(defn- hex->rgb [hex]
+  (let [h (subs hex 1)]
+    [(js/parseInt (subs h 0 2) 16)
+     (js/parseInt (subs h 2 4) 16)
+     (js/parseInt (subs h 4 6) 16)]))
+
+(defn- ->hex2 [n]
+  (let [s (.toString (max 0 (min 255 (Math/round n))) 16)]
+    (if (= 1 (count s)) (str "0" s) s)))
+
+(defn lighten [hex amount]
+  ;; amount in [-1, 1]. Positive lightens toward white, negative darkens toward black.
+  (let [[r g b] (hex->rgb hex)
+        adjust (fn [c]
+                 (if (pos? amount)
+                   (+ c (* (- 255 c) amount))
+                   (* c (+ 1 amount))))]
+    (str "#" (->hex2 (adjust r)) (->hex2 (adjust g)) (->hex2 (adjust b)))))
+
+;; Diatonic chord colors keyed by scale degree (rainbow per scale step).
+(def diatonic-colors
+  {"I"    "#dc2626"
+   "ii"   "#f97316"
+   "iii"  "#eab308"
+   "IV"   "#22c55e"
+   "V7"   "#0ea5e9"
+   "vi"   "#6366f1"
+   "vii°" "#8b5cf6"})
+
 (defn identify-chord [selected-notes]
   (when (>= (count selected-notes) 3)
     (let [sorted-notes (vec (sort-by note-index selected-notes))]

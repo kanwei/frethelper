@@ -26,19 +26,150 @@ body {
 
 #root {
     width: 100%;
-    max-width: 1200px;
+    max-width: 1400px;
 }
 
 .app-container {
     background: white;
     border-radius: 20px;
-    padding: 40px;
+    padding: 24px 16px;
     box-shadow: 0 20px 60px rgba(0,0,0,0.3);
 }
 
 .header {
-    text-align: center;
-    margin-bottom: 40px;
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: 20px;
+}
+
+.settings-button {
+    width: 40px;
+    height: 40px;
+    border: 2px solid #e5e7eb;
+    background: white;
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 20px;
+    line-height: 1;
+    color: #4b5563;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.settings-button:hover {
+    border-color: #8b5cf6;
+    color: #8b5cf6;
+    transform: rotate(45deg);
+}
+
+.minor-sup {
+    font-size: 0.75em;
+    vertical-align: super;
+    line-height: 0;
+    font-weight: 700;
+    margin-left: 1px;
+}
+
+/* Settings Modal */
+.modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+    padding: 20px;
+}
+
+.modal {
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+    width: 100%;
+    max-width: 480px;
+    overflow: hidden;
+}
+
+.modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px 24px;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.modal-title {
+    margin: 0;
+    font-size: 20px;
+    font-weight: 600;
+    color: #1f2937;
+}
+
+.modal-close {
+    background: none;
+    border: none;
+    font-size: 28px;
+    line-height: 1;
+    color: #6b7280;
+    cursor: pointer;
+    padding: 0;
+    width: 32px;
+    height: 32px;
+    border-radius: 6px;
+    transition: all 0.2s;
+}
+
+.modal-close:hover {
+    background: #f3f4f6;
+    color: #1f2937;
+}
+
+.modal-body {
+    padding: 24px;
+}
+
+.setting-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+}
+
+.setting-label {
+    font-weight: 500;
+    color: #374151;
+    font-size: 15px;
+}
+
+.setting-options {
+    display: flex;
+    gap: 8px;
+}
+
+.setting-option {
+    padding: 8px 16px;
+    border: 2px solid #e5e7eb;
+    background: white;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 16px;
+    font-weight: 600;
+    color: #374151;
+    transition: all 0.2s;
+    min-width: 56px;
+}
+
+.setting-option:hover {
+    border-color: #9ca3af;
+}
+
+.setting-option.selected {
+    background: #8b5cf6;
+    color: white;
+    border-color: #8b5cf6;
 }
 
 .title {
@@ -165,8 +296,8 @@ body {
 .fretboard-container {
     background: #fafafa;
     border-radius: 12px;
-    padding: 30px;
-    margin-top: 30px;
+    padding: 20px 12px;
+    margin-top: 24px;
 }
 
 .fretboard-title {
@@ -180,8 +311,119 @@ body {
 .fretboard {
     position: relative;
     width: 100%;
-    max-width: 900px;
+    max-width: 1100px;
     margin: 0 auto;
+}
+
+.fretboard-stack {
+    position: relative;
+    width: 100%;
+    max-width: 1100px;
+    margin: 0 auto;
+}
+
+.caged-overlay {
+    position: absolute;
+    left: 40px;
+    top: 27.5px;
+    width: calc(100% - 40px);
+    height: 330px;
+    pointer-events: none;
+    z-index: 4;
+    overflow: visible;
+}
+
+.caged-note-label {
+    user-select: none;
+    font-family: 'Inter', sans-serif;
+}
+
+.caged-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    justify-content: center;
+    margin: 20px 0;
+}
+
+.caged-legend-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    font-size: 14px;
+    cursor: pointer;
+    font-family: inherit;
+    transition: all 0.15s;
+}
+
+.caged-legend-item:hover {
+    border-color: #9ca3af;
+    transform: translateY(-1px);
+}
+
+.caged-legend-item.inactive {
+    opacity: 0.4;
+    background: #f3f4f6;
+}
+
+.caged-legend-item.inactive:hover {
+    opacity: 0.7;
+}
+
+.caged-legend-swatch {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+}
+
+.caged-legend-degree {
+    font-style: italic;
+    font-weight: 600;
+    color: #6b7280;
+    font-family: 'Georgia', serif;
+}
+
+.caged-legend-name {
+    font-weight: 700;
+    color: #1f2937;
+}
+
+.inversion-toggles {
+    display: flex;
+    gap: 16px;
+    justify-content: center;
+    margin: 12px 0 20px;
+}
+
+.inversion-toggle {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 6px;
+    font-size: 13px;
+    color: #374151;
+    cursor: pointer;
+    transition: all 0.15s;
+}
+
+.inversion-toggle:hover {
+    border-color: #9ca3af;
+}
+
+.inversion-toggle.inactive {
+    opacity: 0.5;
+}
+
+.inversion-toggle input {
+    cursor: pointer;
+    margin: 0;
 }
 
 .fret-numbers {
@@ -369,4 +611,236 @@ body {
 
 .clear-button:hover {
     background: #dc2626;
+}
+
+/* Tab Navigation */
+.tab-navigation {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    margin-bottom: 30px;
+}
+
+.tab-button {
+    padding: 12px 24px;
+    border: 2px solid #e5e7eb;
+    background: white;
+    border-radius: 10px;
+    cursor: pointer;
+    font-size: 16px;
+    font-weight: 600;
+    transition: all 0.2s;
+    color: #374151;
+}
+
+.tab-button:hover {
+    border-color: #9ca3af;
+    transform: translateY(-1px);
+}
+
+.tab-button.active {
+    background: #8b5cf6;
+    color: white;
+    border-color: #8b5cf6;
+}
+
+/* Shared Controls */
+.shared-controls {
+    margin-bottom: 30px;
+    text-align: center;
+}
+
+/* Diatonic Chords */
+.diatonic-chords {
+    margin-top: 25px;
+    padding: 20px;
+    background: #f8fafc;
+    border-radius: 12px;
+}
+
+.diatonic-title {
+    font-weight: 600;
+    color: #374151;
+    margin-bottom: 15px;
+    font-size: 16px;
+}
+
+.diatonic-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    justify-content: center;
+}
+
+.diatonic-chord {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 10px 16px;
+    background: white;
+    border: 2px solid #e5e7eb;
+    border-radius: 10px;
+    min-width: 80px;
+    transition: all 0.2s;
+}
+
+.diatonic-chord:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.08);
+}
+
+.diatonic-degree {
+    font-size: 13px;
+    font-weight: 600;
+    color: #6b7280;
+    font-family: 'Georgia', serif;
+    font-style: italic;
+}
+
+.diatonic-name {
+    font-size: 22px;
+    font-weight: 700;
+    color: #1f2937;
+    margin: 4px 0;
+}
+
+.diatonic-quality {
+    font-size: 11px;
+    color: #6b7280;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.diatonic-chord.quality-major {
+    border-color: #3b82f6;
+}
+
+.diatonic-chord.quality-minor {
+    border-color: #10b981;
+}
+
+.diatonic-chord.quality-dominant-7 {
+    border-color: #f59e0b;
+}
+
+.diatonic-chord.quality-diminished {
+    border-color: #ef4444;
+}
+
+/* Chord Shapes Section */
+.chord-shapes-section {
+    text-align: center;
+}
+
+.chord-controls {
+    margin-bottom: 40px;
+}
+
+.chord-type-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    justify-content: center;
+    margin-top: 15px;
+}
+
+.chord-type-button {
+    padding: 8px 16px;
+    border: 2px solid #e5e7eb;
+    background: white;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    transition: all 0.2s;
+    color: #374151;
+}
+
+.chord-type-button:hover {
+    border-color: #9ca3af;
+    transform: translateY(-1px);
+}
+
+.chord-type-button.selected {
+    background: #8b5cf6;
+    color: white;
+    border-color: #8b5cf6;
+}
+
+/* Chord Forms Grid */
+.chord-forms-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+    justify-content: center;
+    margin-bottom: 30px;
+}
+
+.chord-form-item {
+    flex: 0 0 auto;
+}
+
+/* Chord Diagram */
+.chord-diagram {
+    background: white;
+    padding: 20px;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    text-align: center;
+}
+
+.chord-header {
+    margin-bottom: 15px;
+}
+
+.chord-name {
+    font-size: 24px;
+    font-weight: 700;
+    color: #1f2937;
+    margin: 0 0 5px 0;
+}
+
+.form-name {
+    font-size: 14px;
+    color: #6b7280;
+    margin: 0;
+    font-weight: 500;
+}
+
+.chord-svg {
+    display: block;
+    margin: 0 auto;
+}
+
+.no-chord {
+    padding: 40px;
+    color: #6b7280;
+    font-style: italic;
+}
+
+/* Chord Info */
+.chord-info {
+    background: #f8fafc;
+    padding: 20px;
+    border-radius: 10px;
+    max-width: 400px;
+    margin: 0 auto;
+    text-align: left;
+}
+
+.chord-info h4 {
+    margin: 0 0 15px 0;
+    color: #374151;
+    font-size: 16px;
+}
+
+.chord-info ul {
+    margin: 0;
+    padding-left: 20px;
+}
+
+.chord-info li {
+    margin-bottom: 5px;
+    color: #6b7280;
+    font-size: 14px;
 }
