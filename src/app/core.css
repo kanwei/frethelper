@@ -772,12 +772,22 @@ body {
     border: 2px solid #e5e7eb;
     border-radius: 10px;
     min-width: 80px;
-    transition: all 0.2s;
+    cursor: pointer;
+    transition: all 0.15s;
 }
 
 .diatonic-chord:hover {
     transform: translateY(-2px);
     box-shadow: 0 4px 8px rgba(0,0,0,0.08);
+}
+
+.diatonic-chord.inactive {
+    border-color: #e5e7eb !important;
+    opacity: 0.55;
+}
+
+.diatonic-chord.inactive:hover {
+    opacity: 0.85;
 }
 
 .diatonic-degree {
@@ -816,6 +826,38 @@ body {
 
 .diatonic-chord.quality-diminished {
     border-color: #ef4444;
+}
+
+.variation-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    justify-content: center;
+    margin-top: 8px;
+}
+
+.variation-button {
+    padding: 2px 6px;
+    border: 1px solid #e5e7eb;
+    background: white;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 500;
+    color: #6b7280;
+    cursor: pointer;
+    transition: all 0.15s;
+    font-family: inherit;
+}
+
+.variation-button:hover {
+    border-color: #9ca3af;
+    color: #1f2937;
+}
+
+.variation-button.selected {
+    background: #1f2937;
+    border-color: #1f2937;
+    color: white;
 }
 
 /* Chord Shapes Section */

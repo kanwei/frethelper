@@ -7,7 +7,7 @@
 (def default-settings
   {:minor-notation "m"      ; "m" or "-"
    :fretboard-mode "notes"  ; "notes" or "caged"
-   :active-degrees #{"I" "ii" "vi" "V7"}}) ; jazz default for CAGED overlay
+   :active-variations {}}) ; degree -> variation label; presence = chord active
 
 (defn load-settings []
   (try

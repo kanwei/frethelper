@@ -82,22 +82,24 @@
      :fret fret
      :note (fb/get-note-at-fret open-note fret)}))
 
-(defn caged-positions [chord-root quality]
+(defn caged-positions [chord-root intervals]
   ;; Returns {:positions [...] :connections [[a b] ...]} in fretboard string
   ;; convention (0 = high E, 5 = low E). Positions are every chord tone on the
   ;; fretboard; connections are pairs on adjacent strings within 3 frets.
-  (let [tones (theory/chord-tone-positions chord-root quality)
+  (let [tones (theory/chord-tone-positions chord-root intervals)
         edges (theory/chord-connections tones)]
     {:positions (mapv to-fb-position tones)
      :connections (mapv (fn [[a b]] [(to-fb-position a) (to-fb-position b)]) edges)}))
 
 (defn- pct [n d] (str (* 100 (/ n d)) "%"))
 
-(defui caged-overlay [{:keys [selected-key active-degrees]}]
+(defui caged-overlay [{:keys [selected-key active-variations]}]
   (let [chords (theory/get-diatonic-chords selected-key)
-        active-chords (filterv #(contains? active-degrees (:degree %)) chords)
+        active-chords (filterv #(contains? active-variations (:degree %)) chords)
         chord-data (mapv (fn [{:keys [degree root quality]}]
-                           (let [data (caged-positions root quality)
+                           (let [variation-label (get active-variations degree)
+                                 intervals (theory/intervals-for quality variation-label)
+                                 data (caged-positions root intervals)
                                  color (get theory/diatonic-colors degree "#666")]
                              (assoc data :degree degree :color color)))
                          active-chords)]
@@ -181,7 +183,8 @@
                         :on-click on-clear}
                "Clear Selection"))))))
 
-(defui diatonic-chords-section [{:keys [selected-key minor-notation]}]
+(defui diatonic-chords-section [{:keys [selected-key minor-notation
+                                        active-variations on-variation-change]}]
   (let [chords (theory/get-diatonic-chords selected-key)]
     ($ :div {:class "diatonic-chords"}
        ($ :div {:class "diatonic-title"}
@@ -190,13 +193,25 @@
           (for [{:keys [degree root quality]} chords
                 :let [quality-class (-> quality
                                         (.toLowerCase)
-                                        (.replace " " "-"))]]
+                                        (.replace " " "-"))
+                      variations (theory/variations-for quality)
+                      active-var (get active-variations degree)
+                      degree-active? (some? active-var)]]
             ($ :div {:key degree
-                     :class (str "diatonic-chord quality-" quality-class)}
+                     :class (str "diatonic-chord quality-" quality-class
+                                 (when-not degree-active? " inactive"))}
                ($ :div {:class "diatonic-degree"} degree)
                ($ :div {:class "diatonic-name"}
                   (render-chord-name root quality minor-notation))
-               ($ :div {:class "diatonic-quality"} quality)))))))
+               ($ :div {:class "diatonic-quality"} quality)
+               (when (seq variations)
+                 ($ :div {:class "variation-buttons"}
+                    (for [{:keys [label suffix]} variations
+                          :let [active? (= active-var label)]]
+                      ($ :button {:key (str "var-" label)
+                                  :class (str "variation-button" (when active? " selected"))
+                                  :on-click #(on-variation-change degree label)}
+                         (str root suffix)))))))))))
 
 (defui settings-modal [{:keys [opened settings on-update on-close]}]
   ($ Modal {:opened (boolean opened)
@@ -322,12 +337,12 @@
         handle-chord-type-change (fn [chord-type]
                                    (set-selected-chord-type chord-type))
 
-        handle-toggle-degree (fn [degree]
-                               (let [current (or (:active-degrees user-settings) #{})
-                                     next-set (if (contains? current degree)
-                                                (disj current degree)
-                                                (conj current degree))]
-                                 (update-setting :active-degrees next-set)))]
+        handle-variation-change (fn [degree variation-label]
+                                  (let [current (or (:active-variations user-settings) {})
+                                        next-map (if (= (get current degree) variation-label)
+                                                   (dissoc current degree)
+                                                   (assoc current degree variation-label))]
+                                    (update-setting :active-variations next-map)))]
 
     ($ :div {:class "app-container"}
        ($ :div {:class "header"}
@@ -348,7 +363,9 @@
              ($ key-wheel {:selected-key selected-key
                            :on-select set-selected-key}))
           ($ diatonic-chords-section {:selected-key selected-key
-                                      :minor-notation (:minor-notation user-settings)}))
+                                      :minor-notation (:minor-notation user-settings)
+                                      :active-variations (or (:active-variations user-settings) {})
+                                      :on-variation-change handle-variation-change}))
 
        ;; Compact tab nav (Fretboard view / Chord Diagrams view)
        ($ Tabs {:value active-tab :onChange set-active-tab :variant "pills"
@@ -379,11 +396,7 @@
                               :label "Show all notes"
                               :color "orange"})))
 
-              (if caged-mode?
-                ($ caged-legend {:selected-key selected-key
-                                 :minor-notation (:minor-notation user-settings)
-                                 :active-degrees (or (:active-degrees user-settings) #{})
-                                 :on-toggle handle-toggle-degree})
+              (when-not caged-mode?
                 ($ legend {:selected-key selected-key}))
 
               ($ :div {:class "fretboard-container"}
@@ -399,7 +412,7 @@
                                             :on-note-click handle-note-click})
                     (when caged-mode?
                       ($ caged-overlay {:selected-key selected-key
-                                        :active-degrees (or (:active-degrees user-settings) #{})}))))
+                                        :active-variations (or (:active-variations user-settings) {})}))))
 
               (when-not caged-mode?
                 ($ chord-identifier {:clicked-notes-map clicked-notes

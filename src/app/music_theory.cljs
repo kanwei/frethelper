@@ -164,10 +164,37 @@
 
 (def chord-connection-window 3)
 
-(defn chord-tone-positions [chord-root quality]
-  ;; All fretboard positions (fret 0-12, every string, low-E-first index) where a
-  ;; chord tone occurs. Returns a vector of {:string :fret} maps.
-  (when-let [intervals (triad-intervals quality)]
+;; Variations per chord quality. :label is the key persisted in settings,
+;; :suffix is appended to the chord root for display, :intervals are semitones.
+(def chord-variations
+  {"Major"      [{:label ""     :suffix ""        :intervals [0 4 7]}
+                 {:label "6"    :suffix "6"       :intervals [0 4 7 9]}
+                 {:label "maj7" :suffix "maj7"    :intervals [0 4 7 11]}
+                 {:label "7"    :suffix "7"       :intervals [0 4 7 10]}]
+   "Minor"      [{:label ""     :suffix "m"       :intervals [0 3 7]}
+                 {:label "m6"   :suffix "m6"      :intervals [0 3 7 9]}
+                 {:label "m7"   :suffix "m7"      :intervals [0 3 7 10]}
+                 {:label "mM7"  :suffix "m(maj7)" :intervals [0 3 7 11]}]
+   "Dominant 7" [{:label ""     :suffix ""        :intervals [0 4 7]}
+                 {:label "7"    :suffix "7"       :intervals [0 4 7 10]}]
+   "Diminished" [{:label ""     :suffix "°"       :intervals [0 3 6]}
+                 {:label "°7"   :suffix "°7"      :intervals [0 3 6 9]}
+                 {:label "m7b5" :suffix "ø7"      :intervals [0 3 6 10]}]})
+
+(defn variations-for [quality]
+  (get chord-variations quality []))
+
+(defn intervals-for [quality variation-label]
+  (let [vars (variations-for quality)
+        match (or (some #(when (= (:label %) variation-label) %) vars)
+                  (first vars))]
+    (:intervals match)))
+
+(defn chord-tone-positions
+  "All fretboard positions (fret 0-12, every string, low-E-first index) where a
+  chord tone occurs given the supplied intervals from the chord root."
+  [chord-root intervals]
+  (when (and chord-root (seq intervals))
     (let [root-idx (note-index chord-root)
           classes (set (mapv #(mod (+ root-idx %) 12) intervals))]
       (vec (for [string-idx (range 6)

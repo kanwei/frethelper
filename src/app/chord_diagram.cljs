@@ -1,8 +1,46 @@
 (ns app.chord-diagram
   (:require [uix.core :as uix :refer [defui $]]
+            [clojure.string :as str]
             [app.chord-shapes :as shapes]))
 
-(defui chord-diagram [{:keys [chord-shape chord-name form-name]}]
+(def ^:private all-notes ["C" "Db" "D" "Eb" "E" "F" "Gb" "G" "Ab" "A" "Bb" "B"])
+(def ^:private tuning-low-first ["E" "A" "D" "G" "B" "E"])
+
+(defn- note-idx [n] (.indexOf all-notes n))
+
+(defn- note-at [string-idx fret]
+  (let [open (.indexOf all-notes (nth tuning-low-first string-idx))]
+    (nth all-notes (mod (+ open fret) 12))))
+
+(defn- interval-from [root-note note]
+  (when (and root-note note)
+    (mod (- (note-idx note) (note-idx root-note)) 12)))
+
+(defn- shape-for-interval [iv]
+  (cond
+    (= iv 0)            :circle    ; root
+    (#{3 4} iv)         :triangle  ; minor / major 3rd
+    (#{6 7 8} iv)       :square    ; dim / perfect / aug 5th
+    (#{9 10 11} iv)     :star      ; 6th / b7 / maj 7
+    :else               :circle))
+
+(defn- triangle-points [cx cy r]
+  (let [h (* r 0.866)
+        v (* r 0.5)]
+    (str/join " " [(str cx "," (- cy r))
+                   (str (+ cx h) "," (+ cy v))
+                   (str (- cx h) "," (+ cy v))])))
+
+(defn- star-points [cx cy outer-r inner-r]
+  (str/join " "
+            (for [i (range 10)
+                  :let [angle (* (+ -90 (* i 36)) (/ Math/PI 180))
+                        r (if (even? i) outer-r inner-r)
+                        x (+ cx (* r (Math/cos angle)))
+                        y (+ cy (* r (Math/sin angle)))]]
+              (str x "," y))))
+
+(defui chord-diagram [{:keys [chord-shape chord-name form-name chord-root]}]
   (when chord-shape
     (let [{:keys [frets barres root]} chord-shape
           num-frets 5
@@ -60,28 +98,35 @@
                         :stroke-linecap "round"
                         :opacity "0.7"}))
 
-            ;; Finger positions
+            ;; Finger positions — shape encodes interval, label is the note letter.
             (for [[string-idx fret] (map-indexed vector frets)
                   :when (and fret (> fret 0))
                   :let [row (fret->row fret)]
                   :when (<= 1 row num-frets)]
               (let [x (+ 20 (* string-idx 32))
                     y (- (+ 20 (* row 40)) 20)
-                    is-root (= string-idx root)]
+                    note (note-at string-idx fret)
+                    iv (interval-from chord-root note)
+                    shape (shape-for-interval iv)
+                    is-root (= iv 0)
+                    fill (if is-root "#e74c3c" "#3498db")
+                    r 13
+                    common {:fill fill :stroke "#2c3e50" :stroke-width "1.5"}]
                 ($ :g {:key (str "finger-" string-idx)}
-                   ($ :circle {:cx x
-                               :cy y
-                               :r 12
-                               :fill (if is-root "#e74c3c" "#3498db")
-                               :stroke "#2c3e50"
-                               :stroke-width "2"})
+                   (case shape
+                     :circle   ($ :circle (merge common {:cx x :cy y :r r}))
+                     :triangle ($ :polygon (merge common {:points (triangle-points x y r)}))
+                     :square   ($ :rect (merge common {:x (- x r) :y (- y r)
+                                                       :width (* 2 r) :height (* 2 r)}))
+                     :star     ($ :polygon (merge common {:points (star-points x y r (* r 0.45))}))
+                     ($ :circle (merge common {:cx x :cy y :r r})))
                    ($ :text {:x x
                              :y (+ y 4)
                              :text-anchor "middle"
-                             :font-size "12"
+                             :font-size "11"
                              :fill "white"
                              :font-weight "bold"}
-                      (str fret)))))
+                      note))))
 
             ;; Muted strings (X) and open strings (O)
             (for [[string-idx fret] (map-indexed vector frets)]
@@ -156,7 +201,8 @@
                  (if chord-shape
                    ($ chord-diagram {:chord-shape chord-shape
                                      :chord-name chord-name
-                                     :form-name form-name})
+                                     :form-name form-name
+                                     :chord-root selected-key})
                    ($ :div {:class "no-chord"}
                       ($ :p "No chord shape available")))))))
 
