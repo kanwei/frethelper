@@ -771,7 +771,7 @@ body {
     background: white;
     border: 2px solid #e5e7eb;
     border-radius: 10px;
-    min-width: 80px;
+    min-width: 110px;
     cursor: pointer;
     transition: all 0.15s;
 }
@@ -830,23 +830,26 @@ body {
 
 .variation-buttons {
     display: flex;
-    flex-wrap: wrap;
-    gap: 4px;
-    justify-content: center;
-    margin-top: 8px;
+    flex-direction: column;
+    gap: 6px;
+    align-items: stretch;
+    margin-top: 12px;
+    width: 100%;
 }
 
 .variation-button {
-    padding: 2px 6px;
+    padding: 10px 14px;
     border: 1px solid #e5e7eb;
     background: white;
-    border-radius: 4px;
-    font-size: 11px;
+    border-radius: 6px;
+    font-size: 15px;
     font-weight: 500;
-    color: #6b7280;
+    color: #374151;
     cursor: pointer;
     transition: all 0.15s;
     font-family: inherit;
+    min-height: 40px;
+    width: 100%;
 }
 
 .variation-button:hover {
