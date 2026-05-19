@@ -42,9 +42,12 @@
 
 (defui chord-diagram [{:keys [chord-shape chord-name form-name chord-root]}]
   (when chord-shape
-    (let [{:keys [frets barres root]} chord-shape
-          num-frets 5
+    (let [num-frets 5
           num-strings 6
+          {:keys [barres root]} chord-shape
+          ;; Guard against malformed data: a guitar has 6 strings, so clamp the
+          ;; fret vector to that length to avoid index-out-of-bounds in note-at.
+          frets (vec (take num-strings (:frets chord-shape)))
           string-names ["E" "A" "D" "G" "B" "E"]
           ;; Determine the starting fret of the visible window. If everything is
           ;; within fret 1-5, start at 1; otherwise shift the window to fit.

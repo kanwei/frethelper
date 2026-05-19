@@ -29,54 +29,54 @@
 
    ;; Minor 7th Chords (Forms Im7, IIIm7, Vm7, VIIm7)
    "minor7" {"Im7" {:frets [nil nil 1 nil 2 3] :root 2 :barres [] :name "Form Im7"}
-             "IIIm7" {:frets [nil nil nil 1 1 1 2] :root 3 :barres [1] :name "Form IIIm7"}
+             "IIIm7" {:frets [nil nil 1 1 1 2] :root 3 :barres [1] :name "Form IIIm7"}
              "Vm7" {:frets [nil nil 1 2 3 2] :root 2 :barres [] :name "Form Vm7"}
-             "VIIm7" {:frets [nil nil nil 1 nil 2 3] :root 3 :barres [] :name "Form VIIm7"}}
+             "VIIm7" {:frets [nil nil 1 nil 2 3] :root 3 :barres [] :name "Form VIIm7"}}
 
    ;; Major 7th Chords (Forms IIIMa7, VMa7, VIIMa7, 2Ma7)
-   "major7" {"IIIMa7" {:frets [nil nil nil 1 1 1 2] :root 3 :barres [1] :name "Form IIIMa7"}
+   "major7" {"IIIMa7" {:frets [nil nil 1 1 1 2] :root 3 :barres [1] :name "Form IIIMa7"}
              "VMa7" {:frets [nil nil 1 2 3 4] :root 2 :barres [] :name "Form VMa7"}
-             "VIIMa7" {:frets [nil nil nil 1 nil 2 3] :root 3 :barres [] :name "Form VIIMa7"}
+             "VIIMa7" {:frets [nil nil 1 nil 2 3] :root 3 :barres [] :name "Form VIIMa7"}
              "2Ma7" {:frets [nil 1 1 2 3 nil] :root 1 :barres [1] :name "Form 2Ma7"}}
 
    ;; 7♭5 Chords (Forms I7♭5, III7♭5, V7♭5, VII7♭5)
    "7b5" {"I7b5" {:frets [nil nil 1 2 nil 3] :root 2 :barres [] :name "Form I7♭5"}
-          "III7b5" {:frets [nil nil nil 1 1 nil 2] :root 3 :barres [1] :name "Form III7♭5"}
+          "III7b5" {:frets [nil nil 1 1 nil 2] :root 3 :barres [1] :name "Form III7♭5"}
           "V7b5" {:frets [nil nil 1 2 nil 3] :root 2 :barres [] :name "Form V7♭5"}
-          "VII7b5" {:frets [nil nil nil 1 nil nil 2] :root 3 :barres [] :name "Form VII7♭5"}}
+          "VII7b5" {:frets [nil nil 1 nil nil 2] :root 3 :barres [] :name "Form VII7♭5"}}
 
    ;; 7#5 Chords (Forms I7#5, III7#5, V7#5, VII7#5)
    "7#5" {"I7#5" {:frets [nil nil 1 2 4 3] :root 2 :barres [] :name "Form I7#5"}
-          "III7#5" {:frets [nil nil nil 1 1 4 2] :root 3 :barres [1] :name "Form III7#5"}
+          "III7#5" {:frets [nil nil 1 1 4 2] :root 3 :barres [1] :name "Form III7#5"}
           "V7#5" {:frets [nil nil 1 2 4 3] :root 2 :barres [] :name "Form V7#5"}
-          "VII7#5" {:frets [nil nil nil 1 nil 4 2] :root 3 :barres [] :name "Form VII7#5"}}
+          "VII7#5" {:frets [nil nil 1 nil 4 2] :root 3 :barres [] :name "Form VII7#5"}}
 
    ;; Major 6th Chords (Forms I6, III6, V6, VI6)
    "6th" {"I6" {:frets [nil nil 1 2 nil 3] :root 2 :barres [] :name "Form I6"}
-          "III6" {:frets [nil nil nil 2 3 3 1] :root 3 :barres [3] :name "Form III6"}
+          "III6" {:frets [nil nil 2 3 3 1] :root 3 :barres [3] :name "Form III6"}
           "V6" {:frets [nil nil 1 nil 2 3] :root 2 :barres [] :name "Form V6"}
-          "VI6" {:frets [nil nil nil 1 1 nil 3] :root 3 :barres [1] :name "Form VI6"}}
+          "VI6" {:frets [nil nil 1 1 nil 3] :root 3 :barres [1] :name "Form VI6"}}
 
    ;; Minor 6th Chords (Forms Im6, IIIm6, Vm6, VIm6)
    "minor6" {"Im6" {:frets [nil nil 1 nil 1 2] :root 2 :barres [] :name "Form Im6"}
-             "IIIm6" {:frets [nil nil nil 2 3 3 1] :root 3 :barres [3] :name "Form IIIm6"}
+             "IIIm6" {:frets [nil nil 2 3 3 1] :root 3 :barres [3] :name "Form IIIm6"}
              "Vm6" {:frets [nil nil 1 nil 3 2] :root 2 :barres [] :name "Form Vm6"}
              "VIm6" {:frets [nil 1 1 nil 2 nil] :root 1 :barres [1] :name "Form VIm6"}}
 
    ;; Diminished Chords (Forms I°, III°, V°, VII°)
    "diminished" {"Idim" {:frets [nil nil 1 2 nil 3] :root 2 :barres [] :name "Form I°"}
-                 "IIIdim" {:frets [nil nil nil 1 1 2 nil] :root 3 :barres [1] :name "Form III°"}
+                 "IIIdim" {:frets [nil nil 1 1 2 nil] :root 3 :barres [1] :name "Form III°"}
                  "Vdim" {:frets [nil nil 1 2 3 2] :root 2 :barres [] :name "Form V°"}
-                 "VIIdim" {:frets [nil nil nil 1 nil 2 3] :root 3 :barres [] :name "Form VII°"}}
+                 "VIIdim" {:frets [nil nil 1 nil 2 3] :root 3 :barres [] :name "Form VII°"}}
 
    ;; Augmented Chords
    "augmented" {"aug" {:frets [1 nil 1 2 3 4] :root 0 :barres [] :name "Augmented"}}
 
    ;; 9th Chords (Forms I9, III9, V9, VII9)
    "9th" {"I9" {:frets [nil nil 1 2 3 4] :root 2 :barres [] :name "Form I9"}
-          "III9" {:frets [nil nil nil 1 1 2 3] :root 3 :barres [1] :name "Form III9"}
+          "III9" {:frets [nil nil 1 1 2 3] :root 3 :barres [1] :name "Form III9"}
           "V9" {:frets [nil nil 1 2 3 nil] :root 2 :barres [] :name "Form V9"}
-          "VII9" {:frets [nil nil nil 1 nil 2 3] :root 3 :barres [] :name "Form VII9"}}
+          "VII9" {:frets [nil nil 1 nil 2 3] :root 3 :barres [] :name "Form VII9"}}
 
    ;; Minor 9th Chords (Forms Im9, Vm9, VIIm9)
    "minor9" {"Im9" {:frets [nil nil 1 nil 3 2] :root 2 :barres [] :name "Form Im9"}
@@ -85,21 +85,21 @@
 
    ;; 9#5 Chords (Forms I9#5, III9#5, V9#5, VII9#5)
    "9#5" {"I9#5" {:frets [nil nil 1 nil 3 4] :root 2 :barres [] :name "Form I9#5"}
-          "III9#5" {:frets [nil nil nil 1 1 nil 2] :root 3 :barres [1] :name "Form III9#5"}
+          "III9#5" {:frets [nil nil 1 1 nil 2] :root 3 :barres [1] :name "Form III9#5"}
           "V9#5" {:frets [nil 1 nil 1 2 3] :root 1 :barres [] :name "Form V9#5"}
           "VII9#5" {:frets [nil nil 1 2 nil 3] :root 2 :barres [] :name "Form VII9#5"}}
 
    ;; 9♭5 Chords (Forms I9♭5, III9♭5, V9♭5, VII9♭5)
    "9b5" {"I9b5" {:frets [nil nil 1 nil 2 3] :root 2 :barres [] :name "Form I9♭5"}
-          "III9b5" {:frets [nil nil nil 1 nil 2 3] :root 3 :barres [] :name "Form III9♭5"}
+          "III9b5" {:frets [nil nil 1 nil 2 3] :root 3 :barres [] :name "Form III9♭5"}
           "V9b5" {:frets [nil 1 nil 1 2 nil] :root 1 :barres [] :name "Form V9♭5"}
           "VII9b5" {:frets [nil nil 1 nil 2 3] :root 2 :barres [] :name "Form VII9♭5"}}
 
    ;; Major 9th Chords (Forms IMa9, IIIMa9, VMa9, VIIMa9)
    "major9" {"IMa9" {:frets [nil nil 1 2 3 4] :root 2 :barres [] :name "Form IMa9"}
-             "IIIMa9" {:frets [nil nil nil 1 1 2 3] :root 3 :barres [1] :name "Form IIIMa9"}
+             "IIIMa9" {:frets [nil nil 1 1 2 3] :root 3 :barres [1] :name "Form IIIMa9"}
              "VMa9" {:frets [nil nil 1 2 3 4] :root 2 :barres [] :name "Form VMa9"}
-             "VIIMa9" {:frets [nil nil nil 1 2 3 3] :root 3 :barres [3] :name "Form VIIMa9"}}
+             "VIIMa9" {:frets [nil nil 1 2 3 3] :root 3 :barres [3] :name "Form VIIMa9"}}
 
    ;; 11th Chords (Forms I11, III11, V11, VII11)
    "11th" {"I11" {:frets [nil nil 1 2 3 3] :root 2 :barres [3] :name "Form I11"}
